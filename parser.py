@@ -201,9 +201,8 @@ def main():
 
         server = Flask(__name__)
 
-        @server.route('/bot', methods=['POST'])
-        def get_message():
-            print('Get message')
+        @server.route('/' + token, methods=['POST'])
+        def getMessage():
             json_string = request.get_data().decode('utf-8')
             update = telebot.types.Update.de_json(json_string)
             bot.process_new_updates([update])
@@ -211,13 +210,11 @@ def main():
 
         @server.route("/")
         def webhook():
-            print('Create webhook')
             bot.remove_webhook()
-            bot.set_webhook(
-                url="https://boiling-ridge-34241.herokuapp.com/")  # этот url нужно заменить на url вашего Heroku приложения
-            return "?", 200
+            bot.set_webhook(url='https://your_heroku_project.com/' + token)
+            return "!", 200
 
-        server.run(host="0.0.0.0", port=int(os.environ.get('PORT', 80)))
+        server.run(host="0.0.0.0", port=int(os.environ.get('PORT', 5000)))
     else:
         # если переменной окружения HEROKU нету, значит это запуск с машины.
         # Удаляем вебхук на всякий случай, и запускаем с обычным поллингом.
