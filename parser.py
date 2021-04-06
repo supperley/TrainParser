@@ -4,7 +4,7 @@ import time
 import datetime
 import telebot
 import os
-from flask import Flask, request, Response
+from flask import Flask, request
 import logging
 
 token = '1778090744:AAEaEx2yVHAakqGrV-Sn8q-STE_bIJzSbPM'
@@ -196,12 +196,14 @@ def main():
     # Проверим, есть ли переменная окружения Heroku
     if "HEROKU" in list(os.environ.keys()):
         # logger = telebot.logger
+        print('Starting server')
         telebot.logger.setLevel(logging.INFO)
 
         server = Flask(__name__)
 
         @server.route('/bot', methods=['POST'])
         def get_message():
+            print('Get message')
             json_string = request.get_data().decode('utf-8')
             update = telebot.types.Update.de_json(json_string)
             bot.process_new_updates([update])
@@ -209,12 +211,13 @@ def main():
 
         @server.route("/")
         def webhook():
+            print('Create webhook')
             bot.remove_webhook()
             bot.set_webhook(
-                url="https://boiling-ridge-34241.herokuapp.com")  # этот url нужно заменить на url вашего Heroku приложения
+                url="https://boiling-ridge-34241.herokuapp.com/")  # этот url нужно заменить на url вашего Heroku приложения
             return "?", 200
 
-        server.run(host="0.0.0.0", port=int(os.environ.get('PORT', 5000)))
+        server.run(host="0.0.0.0", port=int(os.environ.get('PORT', 80)))
     else:
         # если переменной окружения HEROKU нету, значит это запуск с машины.
         # Удаляем вебхук на всякий случай, и запускаем с обычным поллингом.
