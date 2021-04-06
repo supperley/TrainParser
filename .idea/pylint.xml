@@ -2,5 +2,6 @@
 <project version="4">
   <component name="PylintConfigService">
     <option name="customPylintPath" value="C:\Users\User\PycharmProjects\TrainParserProject\TrainParser\venv\Scripts\pylint.exe" />
+    <option name="scanBeforeCheckin" value="false" />
   </component>
 </project>

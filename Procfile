@@ -1,1 +1,1 @@
-web: python parser.py runserver 0.0.0.0:$PORT --noreload
+web: python parser.py --bind 0.0.0.0:${PORT} --noreload
