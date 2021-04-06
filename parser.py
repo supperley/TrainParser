@@ -211,10 +211,11 @@ def main():
         @server.route("/")
         def webhook():
             bot.remove_webhook()
-            bot.set_webhook(url='https://your_heroku_project.com/' + token)
-            return "!", 200
+            bot.set_webhook(
+                url="https://boiling-ridge-34241.herokuapp.com/bot")  # этот url нужно заменить на url вашего Хероку приложения
+            return "?", 200
 
-        server.run(host="0.0.0.0", port=int(os.environ.get('PORT', 5000)))
+        server.run(host="0.0.0.0", port=os.environ.get('PORT', 80))
     else:
         # если переменной окружения HEROKU нету, значит это запуск с машины.
         # Удаляем вебхук на всякий случай, и запускаем с обычным поллингом.
