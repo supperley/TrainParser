@@ -203,7 +203,7 @@ def main():
         server = Flask(__name__)
 
         @server.route('/' + token, methods=['POST'])
-        def getMessage():
+        def get_message():
             json_string = request.get_data().decode('utf-8')
             update = telebot.types.Update.de_json(json_string)
             bot.process_new_updates([update])
@@ -216,7 +216,7 @@ def main():
                 url="https://boiling-ridge-34241.herokuapp.com")  # этот url нужно заменить на url вашего Хероку приложения
             return "?", 200
 
-        server.run(host="0.0.0.0", port=os.environ.get('PORT', 80))
+        server.run(host="0.0.0.0", port=os.environ.get('PORT', 80), debug=True)
     else:
         # если переменной окружения HEROKU нету, значит это запуск с машины.
         # Удаляем вебхук на всякий случай, и запускаем с обычным поллингом.
