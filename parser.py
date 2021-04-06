@@ -197,6 +197,7 @@ def main():
     if "HEROKU" in list(os.environ.keys()):
         # logger = telebot.logger
         print('Starting server')
+        bot.remove_webhook()
         telebot.logger.setLevel(logging.INFO)
 
         server = Flask(__name__)
