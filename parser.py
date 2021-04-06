@@ -4,7 +4,7 @@ import time
 import datetime
 import telebot
 import os
-from flask import Flask, request
+from flask import Flask, request, Response
 import logging
 
 token = '1778090744:AAEaEx2yVHAakqGrV-Sn8q-STE_bIJzSbPM'
@@ -213,6 +213,11 @@ def main():
             bot.set_webhook(
                 url="https://boiling-ridge-34241.herokuapp.com/")  # этот url нужно заменить на url вашего Heroku приложения
             return "?", 200
+
+        @server.route("/wakemydyno.txt")
+        def get_text():
+            content = 'Lorem ipsum dolor'
+            return Response(content, mimetype="text/plain")
 
         server.run(host="0.0.0.0", port=int(os.environ.get('PORT', 5000)))
     else:
