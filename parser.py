@@ -211,7 +211,7 @@ def main():
         def webhook():
             bot.remove_webhook()
             bot.set_webhook(
-                url="https://boiling-ridge-34241.herokuapp.com/bot/")  # этот url нужно заменить на url вашего Heroku приложения
+                url="https://boiling-ridge-34241.herokuapp.com")  # этот url нужно заменить на url вашего Heroku приложения
             return "?", 200
 
         server.run(host="0.0.0.0", port=int(os.environ.get('PORT', 5000)))
