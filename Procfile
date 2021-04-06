@@ -1,1 +1,1 @@
-web:  gunicorn parser:server
+web: gunicorn parser:server
