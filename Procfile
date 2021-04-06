@@ -1,1 +1,1 @@
-web: python parser.py
+web: gunicorn parser:server
