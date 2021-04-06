@@ -3,8 +3,12 @@ from bs4 import BeautifulSoup
 import time
 import datetime
 import telebot
+import os
+from flask import Flask, request
+import logging
 
-bot = telebot.TeleBot('1778090744:AAEaEx2yVHAakqGrV-Sn8q-STE_bIJzSbPM')
+token = '1778090744:AAEaEx2yVHAakqGrV-Sn8q-STE_bIJzSbPM'
+bot = telebot.TeleBot(token)
 train_number = 0
 iteration = 0
 sleep_time = 57
@@ -188,6 +192,36 @@ def parser_3(number):
     return [code, ans]
 
 
+def main():
+    # Проверим, есть ли переменная окружения Heroku
+    if "HEROKU" in list(os.environ.keys()):
+        # logger = telebot.logger
+        telebot.logger.setLevel(logging.INFO)
+
+        server = Flask(__name__)
+
+        @server.route('/' + token, methods=['POST'])
+        def get_message():
+            json_string = request.get_data().decode('utf-8')
+            update = telebot.types.Update.de_json(json_string)
+            bot.process_new_updates([update])
+            return "!", 200
+
+        @server.route("/")
+        def webhook():
+            bot.remove_webhook()
+            bot.set_webhook(
+                url="https://boiling-ridge-34241.herokuapp.com/")  # этот url нужно заменить на url вашего Heroku приложения
+            return "?", 200
+
+        server.run(host="0.0.0.0", port=int(os.environ.get('PORT', 5000)))
+    else:
+        # если переменной окружения HEROKU нету, значит это запуск с машины.
+        # Удаляем вебхук на всякий случай, и запускаем с обычным поллингом.
+        bot.remove_webhook()
+        bot.polling(none_stop=True)
+
+
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
-    bot.polling()
+    main()

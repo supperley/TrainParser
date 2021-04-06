@@ -17,3 +17,4 @@ six==1.15.0
 soupsieve==2.2.1
 urllib3==1.26.4
 virtualenv==20.4.3
+Flask==1.1.2
