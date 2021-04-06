@@ -3,13 +3,13 @@ from bs4 import BeautifulSoup
 import time
 import datetime
 import telebot
-import sys
 
 bot = telebot.TeleBot('1778090744:AAEaEx2yVHAakqGrV-Sn8q-STE_bIJzSbPM')
 train_number = 0
 iteration = 0
-sleep_time = 60
+sleep_time = 57
 url = 'https://pass.rw.by/ru/route/?from=%D0%9E%D1%80%D1%88%D0%B0&from_exp=2100170&from_esr=166403&to=%D0%9C%D0%B8%D0%BD%D1%81%D0%BA&to_exp=2100000&to_esr=140210&front_date=11+%D0%B0%D0%BF%D1%80.+2021&date=2021-04-11'
+debug = False
 
 
 @bot.message_handler(commands=['start'])
@@ -26,33 +26,21 @@ def start_message(message):
     bot.send_message(message.chat.id, 'Привет, вот список доступных поездов:')
     bot.send_message(message.chat.id, parser_2())
     # bot.send_message(message.chat.id, 'Для выбора поезда используйте /set', reply_markup=keyboard)
-    hello_message = 'Для выбора поезда используйте /set "число"\n'
-    hello_message += 'Для ручного обновления используйте /update\n'
-    hello_message += 'Для изменения времени обновления используйте /time "число"\n'
+    hello_message = 'Для выбора поезда используйте /set "число"\n\n'
+    hello_message += 'Для ручного обновления используйте /update\n\n'
+    hello_message += 'Для изменения времени обновления используйте /time "число"\n\n'
+    hello_message += 'Для включения/выключения режима отладки используйте /debug\n\n'
     hello_message += 'Для завершения работы используйте /stop'
     bot.send_message(message.chat.id, hello_message, reply_markup=hideboard)
+    print('Start message sent!')
 
 
 @bot.message_handler(commands=['stop'])
 def stop_bot(message):
-    hello_message = 'Bye!\n'
-    bot.send_message(message.chat.id, hello_message)
-    sys.exit(0)
-
-
-def updater(message, start_iteration):
     global iteration
-    while iteration == start_iteration:
-        ans = parser_4(train_number)
-        current_datetime = datetime.datetime.now()
-        print(current_datetime)
-        temp = parser_3(train_number)
-        print(temp)
-        if ans is not None:
-            bot.send_message(message.chat.id, str(current_datetime) + '\n' + str(temp))
-        else:
-            print('Telegram message was not sent!')
-        time.sleep(sleep_time)
+    iteration += 1
+    bot.send_message(message.chat.id, 'Поиск приостановлен!')
+    print('Parsing stopped!')
 
 
 @bot.message_handler(commands=['set'])
@@ -61,6 +49,7 @@ def set_train(message):
     command = message.text.split()
     train_number = int(command[1]) - 1
     bot.send_message(message.chat.id, f'Поезд №{train_number + 1} выбран успешно!')
+    print(f'Train #{train_number + 1} set!')
     global iteration
     iteration += 1
     updater(message, iteration)
@@ -75,13 +64,30 @@ def fast_update(message):
 
 
 @bot.message_handler(commands=['time'])
-def set_train(message):
+def set_time(message):
     global sleep_time
     command = message.text.split()
-    sleep_time = int(command[1])
+    sleep_time = int(command[1]) - 3
     global iteration
     iteration += 1
-    bot.send_message(message.chat.id, f'Установлено время обновления в {sleep_time} секунд!')
+    bot.send_message(message.chat.id, f'Установлено время обновления в {command[1]} секунд!')
+    print(f'Sleep time = {sleep_time}')
+    updater(message, iteration)
+
+
+@bot.message_handler(commands=['debug'])
+def set_debug(message):
+    global debug
+    if not debug:
+        debug = True
+        bot.send_message(message.chat.id, f'Установлен режим отладки!')
+        print('Debug started')
+    else:
+        debug = False
+        bot.send_message(message.chat.id, f'Режим отладки отключен!')
+        print('Debug stropped')
+    global iteration
+    iteration += 1
     updater(message, iteration)
 
 
@@ -93,6 +99,20 @@ def send_text(message):
         bot.send_message(message.chat.id, 'Прощай, создатель')
     else:
         bot.send_message(message.chat.id, 'Команда не распознана')
+
+
+def updater(message, start_iteration):
+    global iteration
+    while iteration == start_iteration:
+        current_datetime = datetime.datetime.now()
+        print(current_datetime)
+        temp = parser_3(train_number)
+        print(temp[1])
+        if temp[0] is not None or debug is True:
+            bot.send_message(message.chat.id, str(current_datetime) + '\n' + str(temp[1]))
+        else:
+            print('Telegram message was not sent!')
+        time.sleep(sleep_time)
 
 
 def parser_2():
@@ -161,32 +181,11 @@ def parser_3(number):
         train_tickets_bad = items[number].find('div', class_='sch-table__no-info').text.strip()
         ans += f'{train_tickets_bad}'
 
-    return ans
+    code = 0
+    if train_tickets.text == '\n':
+        code = None
 
-
-def parser_4(number):
-    global url
-    response = requests.get(url)
-    soup = BeautifulSoup(response.text, 'lxml')
-    items = soup.find_all('div', class_='sch-table__row-wrap')
-    ans = ''
-    train_tickets = items[number].find('div', class_='sch-table__tickets')
-    if train_tickets.text != '\n':
-        train_name = items[number].find('span', class_='train-route').text.strip()
-        train_departure = items[number].find('div', class_='sch-table__time train-from-time').text.strip()
-        train_arrive = items[number].find('div', class_='sch-table__time train-to-time').text.strip()
-        train_duration = items[number].find('div', class_='sch-table__duration train-duration-time').text.strip()
-        ans += f'{train_name} {train_departure} {train_arrive} {train_duration}'
-
-        ans += '\nБилеты:\n'
-        ticket_types = items[number].find_all('div', class_='sch-table__t-name')
-        ticket_space = items[number].find_all('a', class_='sch-table__t-quant js-train-modal dash')
-        ticket_cost = items[number].find_all('span', class_='ticket-cost')
-        for j in range(len(ticket_types)):
-            ans += f'Тип: {ticket_types[j].text} Свободно: {ticket_space[j].text} Цена: {ticket_cost[j].text}\n'
-        return ans
-    else:
-        return None
+    return [code, ans]
 
 
 # Press the green button in the gutter to run the script.
