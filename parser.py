@@ -14,7 +14,6 @@ iteration = 0
 sleep_time = 57
 url = 'https://pass.rw.by/ru/route/?from=%D0%9E%D1%80%D1%88%D0%B0&from_exp=2100170&from_esr=166403&to=%D0%9C%D0%B8%D0%BD%D1%81%D0%BA&to_exp=2100000&to_esr=140210&front_date=11+%D0%B0%D0%BF%D1%80.+2021&date=2021-04-11'
 debug = False
-server = flask.Flask(__name__)
 
 
 @bot.message_handler(commands=['start'])
@@ -193,36 +192,33 @@ def parser_3(number):
     return [code, ans]
 
 
-def main():
-    # Проверим, есть ли переменная окружения Heroku
-    if "HEROKU" in list(os.environ.keys()):
-        # logger = telebot.logger
-        # telebot.logger.setLevel(logging.INFO)
+# Проверим, есть ли переменная окружения Heroku
+if "HEROKU" in list(os.environ.keys()):
+    # logger = telebot.logger
+    # telebot.logger.setLevel(logging.INFO)
 
-        server = Flask(__name__)
+    server = Flask(__name__)
 
-        @server.route('/' + token, methods=['POST'])
-        def get_message():
-            # json_string = flask.request.stream.read().decode("utf-8")
-            json_string = flask.request.get_data().decode('utf-8')
-            update = telebot.types.Update.de_json(json_string)
-            bot.process_new_updates([update])
-            return "!", 200
+    @server.route('/' + token, methods=['POST'])
+    def get_message():
+        json_string = flask.request.get_data().decode('utf-8')
+        update = telebot.types.Update.de_json(json_string)
+        bot.process_new_updates([update])
+        return "!", 200
 
-        @server.route('/', methods=["GET"])
-        def index():
-            bot.remove_webhook()
-            bot.set_webhook(url=f'https://boiling-ridge-34241.herokuapp.com/{token}')
-            return "Hello from Heroku!", 200
-
-        server.run(host="0.0.0.0", port=int(os.environ.get('PORT', 5000)))
-    else:
-        # если переменной окружения HEROKU нету, значит это запуск с машины.
-        # Удаляем вебхук на всякий случай, и запускаем с обычным поллингом.
+    @server.route('/', methods=["GET"])
+    def index():
         bot.remove_webhook()
-        bot.polling(none_stop=True)
+        bot.set_webhook(url=f'https://boiling-ridge-34241.herokuapp.com/{token}')
+        return "Hello from Heroku!", 200
 
+    server.run(host="0.0.0.0", port=int(os.environ.get('PORT', 5000)))
+else:
+    # если переменной окружения HEROKU нету, значит это запуск с машины.
+    # Удаляем вебхук на всякий случай, и запускаем с обычным поллингом.
+    bot.remove_webhook()
+    bot.polling(none_stop=True)
 
 # Press the green button in the gutter to run the script.
-if __name__ == '__main__':
-    main()
+# if __name__ == '__main__':
+#     pass
