@@ -214,10 +214,10 @@ def main():
                 url="https://boiling-ridge-34241.herokuapp.com/")  # этот url нужно заменить на url вашего Heroku приложения
             return "?", 200
 
-        @server.route("/wakemydyno.txt")
-        def get_text():
-            content = 'Lorem ipsum dolor'
-            return Response(content, mimetype="text/plain")
+        # @server.route("/wakemydyno.txt")
+        # def get_text():
+        #     content = 'Lorem ipsum dolor'
+        #     return Response(content, mimetype="text/plain")
 
         server.run(host="0.0.0.0", port=int(os.environ.get('PORT', 5000)))
     else:
