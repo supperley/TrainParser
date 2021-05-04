@@ -8,11 +8,14 @@ import os
 from flask import Flask
 
 token = '1778090744:AAEaEx2yVHAakqGrV-Sn8q-STE_bIJzSbPM'
+# token = '743334117:AAHMwmjwVo0q-1HKQaHWPg0Td5dZ8ee6mDQ'
+
 bot = telebot.TeleBot(token)
 train_number = 0
 iteration = 0
 sleep_time = 57
-url = 'https://pass.rw.by/ru/route/?from=%D0%9E%D1%80%D1%88%D0%B0&from_exp=2100170&from_esr=166403&to=%D0%9C%D0%B8%D0%BD%D1%81%D0%BA&to_exp=2100000&to_esr=140210&front_date=11+%D0%B0%D0%BF%D1%80.+2021&date=2021-04-11'
+url = 'https://pass.rw.by/ru/route/?from=%D0%9C%D0%B8%D0%BD%D1%81%D0%BA-%D0%9F%D0%B0%D1%81%D1%81%D0%B0%D0%B6%D0%B8%D1%80%D1%81%D0%BA%D0%B8%D0%B9&from_exp=2100001&from_esr=&to=%D0%9E%D1%80%D1%88%D0%B0&to_exp=2100170&to_esr=166403&front_date=7+%D0%BC%D0%B0%D1%8F.+2021&date=2021-05-07'
+# url = 'https://pass.rw.by/ru/route/?from=%D0%9C%D0%B8%D0%BD%D1%81%D0%BA-%D0%9F%D0%B0%D1%81%D1%81%D0%B0%D0%B6%D0%B8%D1%80%D1%81%D0%BA%D0%B8%D0%B9&from_exp=0&from_esr=0&to=%D0%9E%D1%80%D1%88%D0%B0&to_exp=2100170&to_esr=166403&date=today&type=1'
 debug = False
 server = flask.Flask(__name__)
 
