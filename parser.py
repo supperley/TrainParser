@@ -14,7 +14,8 @@ bot = telebot.TeleBot(token)
 train_number = 0
 iteration = 0
 sleep_time = 57
-url = 'https://pass.rw.by/ru/route/?from=%D0%9E%D1%80%D1%88%D0%B0&from_exp=2100170&from_esr=166403&to=%D0%9C%D0%BE%D1%81%D0%BA%D0%B2%D0%B0&to_exp=2000000&to_esr=0&front_date=15+%D0%B8%D1%8E%D0%BB%D1%8F.+2021&date=2021-07-15'
+#url = 'https://pass.rw.by/ru/route/?from=%D0%9E%D1%80%D1%88%D0%B0&from_exp=2100170&from_esr=166403&to=%D0%9C%D0%BE%D1%81%D0%BA%D0%B2%D0%B0&to_exp=2000000&to_esr=0&front_date=15+%D0%B8%D1%8E%D0%BB%D1%8F.+2021&date=2021-07-15'
+url = 'https://pass.rw.by/ru/route/?from=%D0%9C%D0%BE%D1%81%D0%BA%D0%B2%D0%B0&from_exp=2000000&from_esr=0&to=%D0%9E%D1%80%D1%88%D0%B0&to_exp=2100170&to_esr=166403&front_date=30+%D0%B8%D1%8E%D0%BB%D1%8F.+2021&date=2021-07-30'
 debug = False
 server = flask.Flask(__name__)
 
