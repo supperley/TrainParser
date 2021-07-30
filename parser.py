@@ -195,7 +195,7 @@ def parser_3(number):
     #print(train_tickets)
     #print(f'###{ticket_cost[0].text}###')
     code = 0
-    if train_tickets.text == '\n' or ticket_cost[0].text == 32,42:
+    if train_tickets.text == '\n' or ticket_cost[0].text == '32,42':
         code = None
 
     return [code, ans]
