@@ -193,7 +193,7 @@ def parser_3(number):
         train_tickets_bad = items[number].find('div', class_='sch-table__no-info').text.strip()
         ans += f'{train_tickets_bad}'
     #print(train_tickets)
-    print(f'###{ticket_cost}###')
+    print(f'###{ticket_cost.text}###')
     code = 0
     if train_tickets.text == '\n':
         code = None
