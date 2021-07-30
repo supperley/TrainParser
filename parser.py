@@ -192,9 +192,7 @@ def parser_3(number):
     if train_tickets_bad:
         train_tickets_bad = items[number].find('div', class_='sch-table__no-info').text.strip()
         ans += f'{train_tickets_bad}'
-
-    bot.send_message(message.chat.id, items[number])
-
+    print(items[number])
     code = 0
     if train_tickets.text == '\n':
         code = None
