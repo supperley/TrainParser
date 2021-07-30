@@ -193,9 +193,9 @@ def parser_3(number):
         train_tickets_bad = items[number].find('div', class_='sch-table__no-info').text.strip()
         ans += f'{train_tickets_bad}'
     #print(train_tickets)
-    print(f'###{ticket_cost[0].text}###')
+    #print(f'###{ticket_cost[0].text}###')
     code = 0
-    if train_tickets.text == '\n':
+    if train_tickets.text == '\n' or ticket_cost[0].text == 32,42:
         code = None
 
     return [code, ans]
