@@ -14,8 +14,7 @@ bot = telebot.TeleBot(token)
 train_number = 0
 iteration = 0
 sleep_time = 57
-url = 'https://pass.rw.by/ru/route/?from=%D0%9E%D1%80%D1%88%D0%B0&from_exp=2100170&from_esr=166403&to=%D0%9C%D0%B8%D0%BD%D1%81%D0%BA&to_exp=2100000&to_esr=140210&front_date=12+%D1%81%D0%B5%D0%BD%D1%82.+2021&date=2021-09-12'
-url = 'https://pass.rw.by/ru/route/?from=%D0%9C%D0%B8%D0%BD%D1%81%D0%BA&from_exp=2100000&from_esr=140210&to=%D0%9E%D1%80%D1%88%D0%B0&to_exp=&to_esr=&front_date=24+%D1%81%D0%B5%D0%BD%D1%82.+2021&date=2021-09-24'
+url = 'https://pass.rw.by/ru/route/?from=%D0%9E%D1%80%D1%88%D0%B0&from_exp=2100170&from_esr=166403&to=%D0%9C%D0%B8%D0%BD%D1%81%D0%BA-%D0%9F%D0%B0%D1%81%D1%81%D0%B0%D0%B6%D0%B8%D1%80%D1%81%D0%BA%D0%B8%D0%B9&to_exp=0&to_esr=0&front_date=26+%D1%81%D0%B5%D0%BD%D1%82.+2021&date=2021-09-26'
 debug = False
 server = flask.Flask(__name__)
 
@@ -192,8 +191,8 @@ def parser_3(number):
     if train_tickets_bad:
         train_tickets_bad = items[number].find('div', class_='sch-table__no-info').text.strip()
         ans += f'{train_tickets_bad}'
-    #print(train_tickets)
-    #print(f'###{ticket_cost[0].text}###')
+    # print(train_tickets)
+    # print(f'###{ticket_cost[0].text}###')
     code = 0
     if train_tickets.text == '\n' or ticket_cost[0].text == '32,62':
         code = None
