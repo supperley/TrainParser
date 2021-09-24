@@ -132,9 +132,9 @@ def parser_2():
     except ConnectionResetError:
         print("Connection error!")
     soup = BeautifulSoup(response.text, 'lxml')
-    # print(soup)
+    print(soup)
     items = soup.find_all('div', class_='sch-table__row-wrap')
-    # print(items)
+    print(items)
     ans = ''
 
     for number, data in enumerate(items, start=1):
