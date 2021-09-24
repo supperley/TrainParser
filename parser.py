@@ -124,6 +124,7 @@ def updater(message, start_iteration):
 
 
 def parser_2():
+    print('parsing started')
     global url
     response = ''
     try:
@@ -164,6 +165,7 @@ def parser_2():
             train_tickets_bad = data.find('div', class_='sch-table__no-info').text.strip()
             ans += f'{train_tickets_bad}\n'
         ans += '\n'
+    print(ans)
 
     return ans
 
