@@ -15,6 +15,7 @@ train_number = 0
 iteration = 0
 sleep_time = 57
 url = 'https://pass.rw.by/ru/route/?from=%D0%9E%D1%80%D1%88%D0%B0&from_exp=2100170&from_esr=166403&to=%D0%9C%D0%B8%D0%BD%D1%81%D0%BA-%D0%9F%D0%B0%D1%81%D1%81%D0%B0%D0%B6%D0%B8%D1%80%D1%81%D0%BA%D0%B8%D0%B9&to_exp=0&to_esr=0&front_date=26+%D1%81%D0%B5%D0%BD%D1%82.+2021&date=2021-09-26'
+url = 'https://pass.rw.by/ru/route/?from=%D0%9E%D1%80%D1%88%D0%B0&from_exp=&from_esr=&to=%D0%9C%D0%B8%D0%BD%D1%81%D0%BA&to_exp=&to_esr=&front_date=26+%D1%81%D0%B5%D0%BD%D1%82.+2021&date=2021-09-26'
 debug = False
 server = flask.Flask(__name__)
 
