@@ -131,6 +131,7 @@ def parser_2():
         response = requests.get(url)
     except ConnectionResetError:
         print("Connection error!")
+    print('request ok')
     soup = BeautifulSoup(response.text, 'lxml')
     print(soup)
     items = soup.find_all('div', class_='sch-table__row-wrap')
