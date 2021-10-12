@@ -7,8 +7,8 @@ import telebot
 import os
 from flask import Flask
 
-# token = '1778090744:AAEaEx2yVHAakqGrV-Sn8q-STE_bIJzSbPM'
-token = '743334117:AAHMwmjwVo0q-1HKQaHWPg0Td5dZ8ee6mDQ'
+token = '1778090744:AAEaEx2yVHAakqGrV-Sn8q-STE_bIJzSbPM'
+# token = '743334117:AAHMwmjwVo0q-1HKQaHWPg0Td5dZ8ee6mDQ'
 
 bot = telebot.TeleBot(token)
 train_number = 0
