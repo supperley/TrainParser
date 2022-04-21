@@ -17,7 +17,8 @@ sleep_time = 60
 
 url = 'https://pass.rw.by/ru/route/?from=%D0%9E%D1%80%D1%88%D0%B0-%D0%A6%D0%B5%D0%BD%D1%82%D1%80%D0%B0%D0%BB%D1%8C%D0%BD%D0%B0%D1%8F&from_exp=2100170&from_esr=166403&to=%D0%9C%D0%B8%D0%BD%D1%81%D0%BA-%D0%9F%D0%B0%D1%81%D1%81%D0%B0%D0%B6%D0%B8%D1%80%D1%81%D0%BA%D0%B8%D0%B9&to_exp=2100001&to_esr=140210&front_date=24+%D0%B0%D0%BF%D1%80.+2022&date=2022-04-24'
 debug = False
-headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36'}
+headers = {
+    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36'}
 server = flask.Flask(__name__)
 
 
@@ -240,7 +241,10 @@ def main():
         # если переменной окружения HEROKU нету, значит это запуск с машины.
         # Удаляем вебхук на всякий случай, и запускаем с обычным поллингом.
         bot.remove_webhook()
-        bot.polling(none_stop=True)
+        try:
+            bot.polling(none_stop=True)
+        except ConnectionError:
+            print('Check Internet connection!')
 
 
 # Press the green button in the gutter to run the script.
