@@ -1,48 +1,73 @@
+import threading
+
 import flask
+import lxml.html
+import lxml.etree
 import requests
 from bs4 import BeautifulSoup
 import time
 import datetime
 import telebot
+import cssselect
 import os
 from flask import Flask
 
-token = '1778090744:AAEaEx2yVHAakqGrV-Sn8q-STE_bIJzSbPM'
-# token = '743334117:AAHMwmjwVo0q-1HKQaHWPg0Td5dZ8ee6mDQ'
+# token = '1778090744:AAEaEx2yVHAakqGrV-Sn8q-STE_bIJzSbPM'
+token = '743334117:AAHMwmjwVo0q-1HKQaHWPg0Td5dZ8ee6mDQ'
 
 bot = telebot.TeleBot(token)
 train_number = 0
+last_date = -1
 iteration = 0
 sleep_time = 60
 
-url = 'https://pass.rw.by/ru/route/?from=%D0%9E%D1%80%D1%88%D0%B0-%D0%A6%D0%B5%D0%BD%D1%82%D1%80%D0%B0%D0%BB%D1%8C%D0%BD%D0%B0%D1%8F&from_exp=2100170&from_esr=166403&to=%D0%9C%D0%B8%D0%BD%D1%81%D0%BA-%D0%9F%D0%B0%D1%81%D1%81%D0%B0%D0%B6%D0%B8%D1%80%D1%81%D0%BA%D0%B8%D0%B9&to_exp=2100001&to_esr=140210&front_date=3+%D0%BC%D0%B0%D1%8F.+2022&date=2022-05-03'
+urls = [{"from": "Орша", "to": "Минск", "date": "2022-05-03"}]
+queue = []
 debug = False
-headers = {
-    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36'}
 server = flask.Flask(__name__)
+search_thread = ""
+
+
+def debug_print(string):
+    print(f'{datetime.datetime.now()} - {string}')
 
 
 @bot.message_handler(commands=['start'])
 def start_message(message):
-    hideboard = telebot.types.ReplyKeyboardRemove()
-    # keyboard = telebot.types.InlineKeyboardMarkup()
-    # keyboard = telebot.types.ReplyKeyboardMarkup()
-    # keyboard.row(telebot.types.InlineKeyboardButton('Set', callback_data='/set'),
-    #              telebot.types.InlineKeyboardButton('Update', callback_data='/update'),
-    #              telebot.types.InlineKeyboardButton('Restart', callback_data='/start'))
-    # keyboard.row(telebot.types.KeyboardButton('/set'),
-    #              telebot.types.KeyboardButton('/update'),
-    #              telebot.types.KeyboardButton('/start'))
-    bot.send_message(message.chat.id, 'Привет, вот список доступных поездов:')
-    bot.send_message(message.chat.id, parser_2())
-    # bot.send_message(message.chat.id, 'Для выбора поезда используйте /set', reply_markup=keyboard)
-    hello_message = 'Для выбора поезда используйте /set "число"\n\n'
-    hello_message += 'Для ручного обновления используйте /update\n\n'
-    hello_message += 'Для изменения времени обновления используйте /time "число"\n\n'
-    hello_message += 'Для включения/выключения режима отладки используйте /debug\n\n'
-    hello_message += 'Для завершения работы используйте /stop'
-    bot.send_message(message.chat.id, hello_message, reply_markup=hideboard)
-    print('Start message sent!')
+    # hideboard = telebot.types.ReplyKeyboardRemove()
+    bot.send_message(message.chat.id, 'Выберите маршрут:')
+    for number, url in enumerate(urls, start=1):
+        bot.send_message(message.chat.id, f'{number}: {url["from"]} - {url["to"]} {url["date"]}')
+        # bot.send_message(message.chat.id, 'Для выбора поезда используйте /set', reply_markup=keyboard)
+        hello_message = '/setdate порядковый_номер - Для выбора маршрута\n\n'
+        hello_message += '/add - Для добавления маршрута\n\n'
+        hello_message += '/delete порядковый_номер - Для удаления маршрута'
+        bot.send_message(message.chat.id, hello_message)
+    debug_print(
+        f'Start message sent! {message.chat.id, message.from_user.first_name, message.from_user.last_name, message.from_user.username}')
+
+
+@bot.message_handler(commands=['setdate'])
+def set_date(message):
+    command = message.text.split()
+    date_number = int(command[1]) - 1
+    debug_print('Route selected!')
+    bot.send_message(message.chat.id,
+                     f'Список доступных поездов по маршруту {urls[date_number]["from"]} - {urls[date_number]["to"]} {urls[date_number]["date"]}:')
+    debug_print(f'Collecting data for {urls[date_number]}')
+    try:
+        bot.send_message(message.chat.id, parser(urls[date_number])[1])
+        # bot.send_message(message.chat.id, 'Для выбора поезда используйте /set', reply_markup=keyboard)
+        hello_message = '/settrain порядковый_номер - Добавить поезд в лист ожидания\n\n'
+        hello_message += '/update - Принудительно обновить\n\n'
+        hello_message += '/time количество_секунд - Изменить время обновления\n\n'
+        hello_message += '/debug - Включить/отключить режим отладки\n\n'
+        hello_message += '/stop - Приостановить поиск'
+        bot.send_message(message.chat.id, hello_message)
+    except Exception as error:
+        bot.send_message(message.chat.id, 'Во время получения данных произошла ошибка!')
+        debug_print(error)
+    debug_print('Train list sent!')
 
 
 @bot.message_handler(commands=['stop'])
@@ -50,19 +75,23 @@ def stop_bot(message):
     global iteration
     iteration += 1
     bot.send_message(message.chat.id, 'Поиск приостановлен!')
-    print('Parsing stopped!')
+    debug_print('Parsing stopped!')
 
 
-@bot.message_handler(commands=['set'])
+@bot.message_handler(commands=['settrain'])
 def set_train(message):
     global train_number
     command = message.text.split()
     train_number = int(command[1]) - 1
+    queue.append({"url": urls[last_date], "number": train_number, "debug": 0})
     bot.send_message(message.chat.id, f'Поезд №{train_number + 1} выбран успешно!')
-    print(f'Train #{train_number + 1} set!')
+    debug_print(f'Train #{train_number + 1} added to queue!')
     global iteration
     iteration += 1
-    updater(message, iteration)
+    global search_thread
+    search_thread = threading.Thread(target=updater, args=(message, ))
+    search_thread.start()
+    # updater(message, iteration)
 
 
 @bot.message_handler(commands=['seturl'])
@@ -71,7 +100,7 @@ def set_url(message):
     command = message.text.split()
     train_url = command[1]
     bot.send_message(message.chat.id, f'Адрес успешно установлен!')
-    print(f'New url set!')
+    debug_print(f'New url set!')
     start_message()
 
 
@@ -91,7 +120,7 @@ def set_time(message):
     global iteration
     iteration += 1
     bot.send_message(message.chat.id, f'Установлено время обновления в {command[1]} секунд!')
-    print(f'Sleep time = {sleep_time}')
+    debug_print(f'Sleep time = {sleep_time}')
     updater(message, iteration)
 
 
@@ -101,11 +130,11 @@ def set_debug(message):
     if not debug:
         debug = True
         bot.send_message(message.chat.id, f'Установлен режим отладки!')
-        print('Debug started')
+        debug_print('Debug started')
     else:
         debug = False
         bot.send_message(message.chat.id, f'Режим отладки отключен!')
-        print('Debug stropped')
+        debug_print('Debug stropped')
     global iteration
     iteration += 1
     updater(message, iteration)
@@ -121,99 +150,112 @@ def send_text(message):
         bot.send_message(message.chat.id, 'Команда не распознана')
 
 
-def updater(message, start_iteration):
-    global iteration
-    while iteration == start_iteration:
-        current_datetime = datetime.datetime.now()
-        print(current_datetime)
-        temp = parser_3(train_number)
-        print(temp[1])
-        if temp[0] is not None or debug is True:
-            bot.send_message(message.chat.id, str(current_datetime) + '\n' + str(temp[1]))
+def updater(message, start_iteration=0):
+    # global iteration
+    # while iteration == start_iteration:
+    debug_print('Updating...')
+    for number, train in enumerate(queue, start=1):
+        temp = parser(train["url"], train["number"])
+        result = str(temp[1]).replace('\n', ' ')
+        debug_print(f"{number} - {result}")
+        if temp[0] != -1 or debug is True:
+            bot.send_message(message.chat.id, str(datetime.datetime.now()) + '\n' + str(temp[1]))
         else:
-            print('Telegram message was not sent!')
-        time.sleep(sleep_time)
+            debug_print('Telegram message was not sent!')
+    debug_print('All trains updated!')
+    time.sleep(sleep_time)
 
 
-def parser_2():
-    print('parsing started')
-    global url
-    response = ''
-    try:
-        response = requests.get(url, headers)
-    except ConnectionResetError:
-        print("Connection error!")
-    print('request ok')
-    soup = BeautifulSoup(response.text, 'lxml')
-    # print(soup)
-    items = soup.find_all('div', class_='sch-table__row-wrap')
-    # print(items)
+def parser(current_url, current_train=-1):
+    # page - full code
+    url = f'https://pass.rw.by/ru/route/?from={current_url["from"]}&to={current_url["to"]}&date={current_url["date"]}'
+    page = requests.get(url)
+    debug_print(f'{page}')
+    # make a lxml tree
+    tree = lxml.html.fromstring(page.content)
+    # print(lxml.html.tostring(tree))
+    # search for trains by ccs
+    transport_res = tree.cssselect('div.sch-table__row-wrap')
+    if current_train != -1:
+        transport_res = transport_res[current_train]
+    result = []
+    status = -1
     ans = ''
+    # for each train
+    for number, data in enumerate(transport_res, start=1):
+        # strip - without spaces
+        train_name = data.cssselect('span.train-route')[0].text_content().strip()
+        train_departure = data.cssselect('div.train-from-time')[0].text_content().strip()
+        train_arrive = data.cssselect('div.train-to-time')[0].text_content().strip()
+        train_duration = data.cssselect('div.train-duration-time')[0].text_content().strip()
+        train_tickets = data.cssselect('div.sch-table__tickets')[0].text_content().strip()
 
-    for number, data in enumerate(items, start=1):
-        train_name = data.find('span', class_='train-route').text.strip()
-        train_departure = data.find('div', class_='sch-table__time train-from-time').text.strip()
-        train_arrive = data.find('div', class_='sch-table__time train-to-time').text.strip()
-        train_duration = data.find('div', class_='sch-table__duration train-duration-time').text.strip()
-        train_tickets = data.find('div', class_='sch-table__tickets')
-
-        ans += f'{number}: {train_name} {train_departure} {train_arrive} {train_duration}\n'
+        # print for debug
+        if current_train == -1:
+            ans += f'{number}: {train_name} {train_departure} {train_arrive} {train_duration}\n'
+        else:
+            ans += f'{train_name} {train_departure} {train_arrive} {train_duration}\n'
         ans += 'Билеты:\n'
 
+        # collecting info about only tickets for qt
+        tickets = ''
         if train_tickets != '\n':
-            ticket_types = data.find_all('div', class_='sch-table__t-name')
-            ticket_space = data.find_all('a', class_='sch-table__t-quant js-train-modal dash')
-            ticket_cost = data.find_all('span', class_='ticket-cost')
-            for j in range(len(ticket_types)):
-                # if ticket_types[j]:
-                #     print(f'Тип: {ticket_types[j].text}')
-                # if ticket_space[j]:
-                #     print(f'Свободно: {ticket_space[j].text}')
-                # if ticket_cost[j]:
-                #     print(f'Цена: {ticket_cost[j].text}')
-                ans += f'Тип: {ticket_types[j].text} --- Свободно: {ticket_space[j].text} --- Цена: {ticket_cost[j].text}\n'
+            # items is []
+            ticket_items = data.cssselect('div.sch-table__t-item')
+            for item in ticket_items:
+                status = 0
+                # each item includes name, free, [] of prices
+                ticket_type = item.cssselect('div.sch-table__t-name')
+                ticket_free = item.cssselect('a.sch-table__t-quant')
+                ticket_prices = item.cssselect('span.ticket-cost')
 
-        train_tickets_bad = data.find('div', class_='sch-table__no-info')
+                if ticket_type[0].text is not None and ticket_type[0].text != ' ':
+                    ans += f'Тип: {ticket_type[0].text}'
+                    tickets += f'Тип: {ticket_type[0].text}'
+                else:
+                    ans += 'Tип: --------'
+                    tickets += 'Tип: --------'
+
+                if ticket_free[0].text_content() is not None:
+                    ans += f' --- Свободно: {ticket_free[0].text_content()}'
+                    tickets += f' --- Свободно: {ticket_free[0].text_content()}'
+                else:
+                    ans += ' --- Свободно: ---'
+                    tickets += ' --- Свободно: ---'
+
+                if ticket_prices is not None:
+                    # if it is not one price
+                    for num, price in enumerate(ticket_prices):
+                        if num < 1:
+                            ans += f' --- Цена: {price.text}\n'
+                            tickets += f' --- Цена: {price.text}\n'
+                        else:
+                            ans += f'-------------------------------------- Цена: {price.text}\n'
+                            tickets += f'-------------------------------------- Цена: {price.text}\n'
+                else:
+                    ans += ' --- Цена: ---\n'
+                    tickets += ' --- Цена: ---\n'
+
+        train_tickets_bad = data.cssselect('div.sch-table__no-info')
         if train_tickets_bad:
-            train_tickets_bad = data.find('div', class_='sch-table__no-info').text.strip()
-            ans += f'{train_tickets_bad}\n'
+            train_tickets_bad = data.cssselect('div.sch-table__no-info')
+            ans += f'{train_tickets_bad[0].text.strip()}\n'
+            tickets = f'{train_tickets_bad[0].text.strip()}\n'
         ans += '\n'
-    print(ans)
 
-    return ans
+        tickets = tickets[:-1]  # убрать лишний перевод строки
+        str_count = tickets.count("\n")  # количество строк
 
-
-def parser_3(number):
-    global url
-    response = requests.get(url)
-    soup = BeautifulSoup(response.text, 'lxml')
-    items = soup.find_all('div', class_='sch-table__row-wrap')
-
-    train_name = items[number].find('span', class_='train-route').text.strip()
-    train_departure = items[number].find('div', class_='sch-table__time train-from-time').text.strip()
-    train_arrive = items[number].find('div', class_='sch-table__time train-to-time').text.strip()
-    train_duration = items[number].find('div', class_='sch-table__duration train-duration-time').text.strip()
-    train_tickets = items[number].find('div', class_='sch-table__tickets')
-    ans = f'{train_name} {train_departure} {train_arrive} {train_duration}'
-    ans += '\nБилеты:\n'
-    if train_tickets:
-        ticket_types = items[number].find_all('div', class_='sch-table__t-name')
-        ticket_space = items[number].find_all('a', class_='sch-table__t-quant js-train-modal dash')
-        ticket_cost = items[number].find_all('span', class_='ticket-cost')
-        for j in range(len(ticket_types)):
-            ans += f'Тип: {ticket_types[j].text} Свободно: {ticket_space[j].text} Цена: {ticket_cost[j].text}\n'
-
-    train_tickets_bad = items[number].find('div', class_='sch-table__no-info')
-    if train_tickets_bad:
-        train_tickets_bad = items[number].find('div', class_='sch-table__no-info').text.strip()
-        ans += f'{train_tickets_bad}'
-    # print(train_tickets)
-    # print(f'###{ticket_cost[0].text}###')
-    code = 0
-    if train_tickets.text == '\n' or ticket_cost[0].text == '32,62':
-        code = None
-
-    return [code, ans]
+        # полная информация о поезде
+        # train_info = [number, train_name, train_departure, train_arrive, train_duration, str_count, tickets]
+        train_info = {'number': number, 'train_name': train_name, 'train_departure': train_departure,
+                      'train_arrive': train_arrive, 'train_duration': train_duration,
+                      'str_count': str_count, 'tickets': tickets}
+        result.append(train_info)
+    ans = ans[:-1]
+    # print(status)
+    # print(ans)
+    return [status, ans]
 
 
 def main():
@@ -242,9 +284,10 @@ def main():
         # Удаляем вебхук на всякий случай, и запускаем с обычным поллингом.
         bot.remove_webhook()
         try:
+            debug_print('Start pooling messages...')
             bot.polling(none_stop=True)
-        except ConnectionError:
-            print('Check Internet connection!')
+        except:
+            debug_print('Polling stopped!')
 
 
 # Press the green button in the gutter to run the script.
