@@ -1,31 +1,35 @@
+import datetime
+import os
 import threading
+import time
 
 import flask
-import lxml.html
 import lxml.etree
+import lxml.html
 import requests
-from bs4 import BeautifulSoup
-import time
-import datetime
 import telebot
-import cssselect
-import os
 from flask import Flask
 
-# token = '1778090744:AAEaEx2yVHAakqGrV-Sn8q-STE_bIJzSbPM'
-token = '743334117:AAHMwmjwVo0q-1HKQaHWPg0Td5dZ8ee6mDQ'
+TOKEN = '1778090744:AAEaEx2yVHAakqGrV-Sn8q-STE_bIJzSbPM'
+# TOKEN = '743334117:AAHMwmjwVo0q-1HKQaHWPg0Td5dZ8ee6mDQ'
 
-bot = telebot.TeleBot(token)
-train_number = 0
-last_date = -1
-iteration = 0
-sleep_time = 60
-
-urls = [{"from": "Орша", "to": "Минск", "date": "2022-05-03"}]
-queue = []
-debug = False
+bot = telebot.TeleBot(TOKEN)
+# to set train after setting date
+LAST_DATE = -1
+SLEEP_TIME = 60
+# routes urls
+URLS = [{"from": "Орша", "to": "Минск", "date": "2022-05-03"}]
+# waiting list
+QUEUE = []
+# debug message mod
+DEBUG = False
+# for creating a new route
+TEMP_DATA = {}
+# thread for searching process
+SEARCH_THREAD = None
+# event to stop thread
+THREAD_STOP = False
 server = flask.Flask(__name__)
-search_thread = ""
 
 
 def debug_print(string):
@@ -36,134 +40,185 @@ def debug_print(string):
 def start_message(message):
     # hideboard = telebot.types.ReplyKeyboardRemove()
     bot.send_message(message.chat.id, 'Выберите маршрут:')
-    for number, url in enumerate(urls, start=1):
-        bot.send_message(message.chat.id, f'{number}: {url["from"]} - {url["to"]} {url["date"]}')
+    routes_list = ""
+    for number, url in enumerate(URLS, start=1):
+        routes_list += f'{number}: {url["from"]} - {url["to"]} {url["date"]}\n\n'
         # bot.send_message(message.chat.id, 'Для выбора поезда используйте /set', reply_markup=keyboard)
-        hello_message = '/setdate порядковый_номер - Для выбора маршрута\n\n'
-        hello_message += '/add - Для добавления маршрута\n\n'
-        hello_message += '/delete порядковый_номер - Для удаления маршрута'
-        bot.send_message(message.chat.id, hello_message)
-    debug_print(
-        f'Start message sent! {message.chat.id, message.from_user.first_name, message.from_user.last_name, message.from_user.username}')
+    bot.send_message(message.chat.id, routes_list)
+    hello_message = '/setdate порядковый_номер - Для выбора маршрута\n\n'
+    hello_message += '/adddate - Для добавления маршрута\n\n'
+    hello_message += '/deletedate порядковый_номер - Для удаления маршрута\n\n'
+    hello_message += '/list - Лист ожидания'
+    bot.send_message(message.chat.id, hello_message)
+    debug_print(f'Start message sent! {message.chat.id, message.from_user.first_name, message.from_user.last_name, message.from_user.username}')
 
 
 @bot.message_handler(commands=['setdate'])
 def set_date(message):
     command = message.text.split()
     date_number = int(command[1]) - 1
-    debug_print('Route selected!')
-    bot.send_message(message.chat.id,
-                     f'Список доступных поездов по маршруту {urls[date_number]["from"]} - {urls[date_number]["to"]} {urls[date_number]["date"]}:')
-    debug_print(f'Collecting data for {urls[date_number]}')
-    try:
-        bot.send_message(message.chat.id, parser(urls[date_number])[1])
-        # bot.send_message(message.chat.id, 'Для выбора поезда используйте /set', reply_markup=keyboard)
-        hello_message = '/settrain порядковый_номер - Добавить поезд в лист ожидания\n\n'
-        hello_message += '/update - Принудительно обновить\n\n'
-        hello_message += '/time количество_секунд - Изменить время обновления\n\n'
-        hello_message += '/debug - Включить/отключить режим отладки\n\n'
-        hello_message += '/stop - Приостановить поиск'
-        bot.send_message(message.chat.id, hello_message)
-    except Exception as error:
-        bot.send_message(message.chat.id, 'Во время получения данных произошла ошибка!')
-        debug_print(error)
-    debug_print('Train list sent!')
+    if date_number < len(URLS):
+        debug_print('Route selected!')
+        bot.send_message(message.chat.id,
+                         f'Список доступных поездов по маршруту {URLS[date_number]["from"]} - {URLS[date_number]["to"]} {URLS[date_number]["date"]}:')
+        debug_print(f'Collecting data for {URLS[date_number]}')
+        try:
+            bot.send_message(message.chat.id, parser(URLS[date_number])[1])
+            # bot.send_message(message.chat.id, 'Для выбора поезда используйте /set', reply_markup=keyboard)
+            hello_message = '/settrain порядковый_номер - Добавить поезд в лист ожидания\n\n'
+            hello_message += '/update - Принудительно обновить\n\n'
+            hello_message += '/time количество_секунд - Изменить время обновления\n\n'
+            hello_message += '/debug - Включить/отключить режим отладки\n\n'
+            hello_message += '/stop - Приостановить поиск'
+            bot.send_message(message.chat.id, hello_message)
+        except Exception as error:
+            bot.send_message(message.chat.id, 'Во время получения данных произошла ошибка!')
+            debug_print(error)
+        debug_print('Train list sent!')
+    else:
+        bot.send_message(message.chat.id, 'Маршрута с таким номером не существует')
+
+
+@bot.message_handler(commands=['adddate'])
+def add_date(message):
+    msg = bot.send_message(message.chat.id, 'Введите станцию отправления:')
+    global TEMP_DATA
+    TEMP_DATA = {}
+    bot.register_next_step_handler(msg, step_1)
+
+
+def step_1(message):
+    global TEMP_DATA
+    TEMP_DATA["from"] = message.text
+    msg = bot.send_message(message.chat.id, 'Введите станцию назначения:')
+    bot.register_next_step_handler(msg, step_2)
+
+
+def step_2(message):
+    global TEMP_DATA
+    TEMP_DATA["to"] = message.text
+    msg = bot.send_message(message.chat.id, 'Введите дату в формате YYYY-MM-DD:')
+    bot.register_next_step_handler(msg, submit_step)
+
+
+def submit_step(message):
+    global TEMP_DATA
+    TEMP_DATA["date"] = message.text
+    URLS.append(TEMP_DATA)
+    bot.send_message(message.chat.id, 'Маршрут успешно добавлен!')
+    debug_print(f'Route added! ({TEMP_DATA})')
+
+
+@bot.message_handler(commands=['deletedate'])
+def delete_date(message):
+    command = message.text.split()
+    date_number = int(command[1]) - 1
+    if date_number < len(URLS):
+        URLS.pop(date_number)
+        bot.send_message(message.chat.id, 'Маршрут успешно удален!')
+        debug_print(f'Route deleted! ({TEMP_DATA})')
+    else:
+        bot.send_message(message.chat.id, 'Маршрута с таким номером не существует')
 
 
 @bot.message_handler(commands=['stop'])
 def stop_bot(message):
-    global iteration
-    iteration += 1
+    global THREAD_STOP
+    THREAD_STOP = True
     bot.send_message(message.chat.id, 'Поиск приостановлен!')
     debug_print('Parsing stopped!')
 
 
+@bot.message_handler(commands=['list'])
+def start_message(message):
+    if QUEUE:
+        bot.send_message(message.chat.id, 'Лист ожидания:')
+        for number, train in enumerate(QUEUE, start=1):
+            bot.send_message(message.chat.id,
+                             f'{number}: {train["url"]["from"]} - {train["url"]["to"]} {train["url"]["date"]}, поезд №{train["number"] + 1}')
+        debug_print(f'Queue: {QUEUE}')
+    else:
+        bot.send_message(message.chat.id, 'Лист ожидания пуст!')
+
+
 @bot.message_handler(commands=['settrain'])
 def set_train(message):
-    global train_number
     command = message.text.split()
     train_number = int(command[1]) - 1
-    queue.append({"url": urls[last_date], "number": train_number, "debug": 0})
+    # if train_number < len(URLS):
+    # TODO check this.
+    QUEUE.append({"url": URLS[LAST_DATE], "number": train_number, "debug": 0})
     bot.send_message(message.chat.id, f'Поезд №{train_number + 1} выбран успешно!')
     debug_print(f'Train #{train_number + 1} added to queue!')
-    global iteration
-    iteration += 1
-    global search_thread
-    search_thread = threading.Thread(target=updater, args=(message, ))
-    search_thread.start()
-    # updater(message, iteration)
-
-
-@bot.message_handler(commands=['seturl'])
-def set_url(message):
-    global url
-    command = message.text.split()
-    train_url = command[1]
-    bot.send_message(message.chat.id, f'Адрес успешно установлен!')
-    debug_print(f'New url set!')
-    start_message()
+    global SEARCH_THREAD
+    SEARCH_THREAD = threading.Thread(target=updater, args=(message,))
+    SEARCH_THREAD.start()
+    # else:
+    #     bot.send_message(message.chat.id, 'Поезда с таким номером не существует')
 
 
 @bot.message_handler(commands=['update'])
 def fast_update(message):
-    global iteration
-    iteration += 1
-    bot.send_message(message.chat.id, f'Ручное обновление выполнено успешно!')
-    updater(message, iteration)
+    # TODO fix
+    SEARCH_THREAD.start()
+    bot.send_message(message.chat.id, 'Ручное обновление выполнено успешно!')
 
 
 @bot.message_handler(commands=['time'])
 def set_time(message):
-    global sleep_time
+    global SLEEP_TIME
     command = message.text.split()
-    sleep_time = int(command[1]) - 3
-    global iteration
-    iteration += 1
-    bot.send_message(message.chat.id, f'Установлено время обновления в {command[1]} секунд!')
-    debug_print(f'Sleep time = {sleep_time}')
-    updater(message, iteration)
+    if int(command[1]) - 3 > 0:
+        SLEEP_TIME = int(command[1]) - 3
+        bot.send_message(message.chat.id, f'Установлено время обновления в {command[1]} секунд!')
+        debug_print(f'Sleep time = {SLEEP_TIME}')
+    else:
+        bot.send_message(message.chat.id, f'Укажите время более трех секунд!')
 
 
 @bot.message_handler(commands=['debug'])
 def set_debug(message):
-    global debug
-    if not debug:
-        debug = True
-        bot.send_message(message.chat.id, f'Установлен режим отладки!')
+    global DEBUG
+    if not DEBUG:
+        DEBUG = True
+        bot.send_message(message.chat.id, 'Установлен режим отладки!')
         debug_print('Debug started')
     else:
-        debug = False
-        bot.send_message(message.chat.id, f'Режим отладки отключен!')
+        DEBUG = False
+        bot.send_message(message.chat.id, 'Режим отладки отключен!')
         debug_print('Debug stropped')
-    global iteration
-    iteration += 1
-    updater(message, iteration)
 
 
 @bot.message_handler(content_types=['text'])
 def send_text(message):
     if message.text.lower() == 'привет':
-        bot.send_message(message.chat.id, 'Привет, мой создатель')
+        bot.send_message(message.chat.id, 'Привет, создатель')
     elif message.text.lower() == 'пока':
         bot.send_message(message.chat.id, 'Прощай, создатель')
     else:
         bot.send_message(message.chat.id, 'Команда не распознана')
 
 
-def updater(message, start_iteration=0):
-    # global iteration
-    # while iteration == start_iteration:
-    debug_print('Updating...')
-    for number, train in enumerate(queue, start=1):
-        temp = parser(train["url"], train["number"])
-        result = str(temp[1]).replace('\n', ' ')
-        debug_print(f"{number} - {result}")
-        if temp[0] != -1 or debug is True:
-            bot.send_message(message.chat.id, str(datetime.datetime.now()) + '\n' + str(temp[1]))
-        else:
-            debug_print('Telegram message was not sent!')
-    debug_print('All trains updated!')
-    time.sleep(sleep_time)
+def updater(message):
+    debug_print('Thread started!')
+    while True:
+        global THREAD_STOP
+        if THREAD_STOP:
+            THREAD_STOP = False
+            break
+        debug_print('Updating...')
+        global QUEUE
+        debug_print(f'{QUEUE}')
+        for number, train in enumerate(QUEUE, start=1):
+            temp = parser(train["url"], train["number"])
+            result = str(temp[1]).replace('\n', ' ')
+            debug_print(f"{number} - {result}")
+            if temp[0] != -1 or DEBUG is True:
+                bot.send_message(message.chat.id, str(datetime.datetime.now()) + '\n' + str(temp[1]))
+            else:
+                debug_print('Telegram message was not sent!')
+        debug_print('All trains updated!')
+        time.sleep(SLEEP_TIME)
 
 
 def parser(current_url, current_train=-1):
@@ -264,7 +319,7 @@ def main():
 
         server = Flask(__name__)
 
-        @server.route('/' + token, methods=['POST'])
+        @server.route('/' + TOKEN, methods=['POST'])
         def get_message():
             # json_string = flask.request.stream.read().decode("utf-8")
             json_string = flask.request.get_data().decode('utf-8')
@@ -275,19 +330,27 @@ def main():
         @server.route('/', methods=["GET"])
         def index():
             bot.remove_webhook()
-            bot.set_webhook(url=f'https://boiling-ridge-34241.herokuapp.com/{token}')
+            bot.set_webhook(url=f'https://boiling-ridge-34241.herokuapp.com/{TOKEN}')
             return "Hello from Heroku!", 200
 
         server.run(host="0.0.0.0", port=int(os.environ.get('PORT', 5000)))
     else:
         # если переменной окружения HEROKU нету, значит это запуск с машины.
         # Удаляем вебхук на всякий случай, и запускаем с обычным поллингом.
-        bot.remove_webhook()
         try:
-            debug_print('Start pooling messages...')
-            bot.polling(none_stop=True)
-        except:
-            debug_print('Polling stopped!')
+            bot.remove_webhook()
+        except Exception as error:
+            debug_print(f'Webhook removing bad! Error: {error}')
+        while True:
+            try:
+                debug_print('Start pooling messages...')
+                bot.polling(none_stop=True)
+            except Exception as error:
+                debug_print(f'Polling stopped! Error: {error}')
+            else:
+                bot.stop_polling()
+                debug_print("Polling finished!")
+                break
 
 
 # Press the green button in the gutter to run the script.
