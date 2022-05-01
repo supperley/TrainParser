@@ -2,7 +2,6 @@ import datetime
 import os
 import threading
 import time
-
 import flask
 import lxml.etree
 import cssselect
