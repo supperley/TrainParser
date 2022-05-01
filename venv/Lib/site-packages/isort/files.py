@@ -1,7 +1,6 @@
 import os
 from pathlib import Path
 from typing import Iterable, Iterator, List, Set
-from warnings import warn
 
 from isort.settings import Config
 
@@ -26,15 +25,13 @@ def find(
                         dirnames.remove(dirname)
                     else:
                         if resolved_path in visited_dirs:  # pragma: no cover
-                            if not config.quiet:
-                                warn(f"Likely recursive symlink detected to {resolved_path}")
                             dirnames.remove(dirname)
                     visited_dirs.add(resolved_path)
 
                 for filename in filenames:
                     filepath = os.path.join(dirpath, filename)
                     if config.is_supported_filetype(filepath):
-                        if config.is_skipped(Path(filepath)):
+                        if config.is_skipped(Path(os.path.abspath(filepath))):
                             skipped.append(filename)
                         else:
                             yield filepath

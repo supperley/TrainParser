@@ -5,6 +5,7 @@ import time
 
 import flask
 import lxml.etree
+import cssselect
 import lxml.html
 import requests
 import telebot
