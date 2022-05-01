@@ -12,7 +12,6 @@ cssselect==1.1.0
 distlib==0.3.4
 filelock==3.6.0
 gunicorn==20.1.0
-heroku3==5.1.4
 idna==3.3
 isort==5.10.1
 itsdangerous==2.1.2
@@ -22,6 +21,7 @@ numpy==1.22.3
 pip==22.0.4
 pylint==2.13.7
 python-dateutil==2.8.2
+pyTelegramBotAPI==4.5.0
 requests==2.27.1
 setuptools==62.1.0
 six==1.16.0
@@ -30,3 +30,4 @@ toml==0.10.2
 urllib3==1.26.9
 virtualenv==20.14.1
 wrapt==1.14.0
+wheel==0.37.1
