@@ -2,7 +2,7 @@ appdirs==1.4.4
 certifi==2021.10.8
 chardet==4.0.0
 distlib==0.3.4
-filelock==3.6.0
+filelock==3.4.1
 heroku==0.1.4
 idna==3.3
 lxml==4.8.0
