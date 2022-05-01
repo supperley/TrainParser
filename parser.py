@@ -17,7 +17,7 @@ bot = telebot.TeleBot(TOKEN)
 # to set train after setting date
 LAST_DATE = -1
 SLEEP_TIME = 60
-# routes urls
+# routes url
 URLS = [{"from": "Орша", "to": "Минск", "date": "2022-05-03"}]
 # waiting list
 QUEUE = []
