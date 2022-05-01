@@ -12,7 +12,7 @@ cssselect==1.1.0
 distlib==0.3.4
 filelock==3.6.0
 gunicorn==20.1.0
-heroku==0.1.4
+heroku3==5.1.4
 idna==3.3
 isort==5.10.1
 itsdangerous==2.1.2
