@@ -10,15 +10,12 @@ import requests
 import telebot
 from flask import Flask
 
-TOKEN = '1778090744:AAEaEx2yVHAakqGrV-Sn8q-STE_bIJzSbPM'
-# TOKEN = '743334117:AAHMwmjwVo0q-1HKQaHWPg0Td5dZ8ee6mDQ'
-
 bot = telebot.TeleBot(TOKEN)
 # to set train after setting date
 LAST_DATE = -1
 SLEEP_TIME = 60
 # routes url
-URLS = [{"from": "Орша", "to": "Минск", "date": "2022-05-03"}]
+URLS = [{"from": "Орша", "to": "Москва", "date": "2022-07-16"}]
 # waiting list
 QUEUE = []
 # debug message mod
