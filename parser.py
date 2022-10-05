@@ -9,6 +9,12 @@ import lxml.html
 import requests
 import telebot
 from flask import Flask
+from os import environ
+from dotenv import load_dotenv
+
+load_dotenv()
+
+TOKEN = environ["TOKEN"]
 
 bot = telebot.TeleBot(TOKEN)
 # to set train after setting date
