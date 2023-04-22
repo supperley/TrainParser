@@ -9,19 +9,16 @@ import lxml.html
 import requests
 import telebot
 from flask import Flask
-from os import environ
-from dotenv import load_dotenv
+import config
 
-load_dotenv()
-
-TOKEN = environ["TOKEN"]
+TOKEN = config.token
 
 bot = telebot.TeleBot(TOKEN)
 # to set train after setting date
 LAST_DATE = -1
 SLEEP_TIME = 60
 # routes url
-URLS = [{"from": "Орша", "to": "Москва", "date": "2022-07-16"}]
+URLS = [{"from": "Москва", "to": "Минск", "date": "2023-04-25"}]
 # waiting list
 QUEUE = []
 # debug message mod
